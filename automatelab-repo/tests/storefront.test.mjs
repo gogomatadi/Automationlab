@@ -299,3 +299,10 @@ test("a cancelled membership can be resumed while the paid period runs", async (
   assert.match(resume, /current_period_end\) <= new Date\(\)/);
   assert.match(account, /status === "cancelled" && <ResumeMembershipButton/);
 });
+
+test("membership checkout uses the live plan code only with a live secret key", async () => {
+  const lib = await readFile(new URL("../lib/paystack.ts", import.meta.url), "utf8");
+  const route = await readFile(new URL("../app/api/paystack/create-subscription/route.ts", import.meta.url), "utf8");
+  assert.match(lib, /startsWith\("sk_live_"\) \? "paystack_membership_plan_code_live" : "paystack_membership_plan_code"/);
+  assert.match(route, /membershipPlanSettingKey\(\)/);
+});

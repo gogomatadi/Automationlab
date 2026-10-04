@@ -22,3 +22,9 @@ export function verifyPaystackSignature(rawBody: string, signature: string | nul
   const received = Buffer.from(signature);
   return expected.length === received.length && timingSafeEqual(expected, received);
 }
+
+// Paystack test and live plans have different codes; pick the one matching the active secret key
+// so swapping PAYSTACK_SECRET_KEY to sk_live_ can't send a live checkout to a test plan.
+export function membershipPlanSettingKey() {
+  return serverEnv.paystackSecret().startsWith("sk_live_") ? "paystack_membership_plan_code_live" : "paystack_membership_plan_code";
+}

@@ -19,6 +19,7 @@ export function LoginForm({ next = "/account" }: { next?: string }) {
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
+  const [sentTo, setSentTo] = useState<{ email: string; kind: "signup" | "link" | "reset" } | null>(null);
 
   const callback = (target: string) => `${window.location.origin}/auth/callback?next=${encodeURIComponent(target)}`;
 
@@ -37,13 +38,13 @@ export function LoginForm({ next = "/account" }: { next?: string }) {
       const { data, error: signUpError } = await supabase.auth.signUp({ email, password, options: { emailRedirectTo: callback(next) } });
       if (signUpError) setError(signUpError.message);
       else if (data.session) { window.location.assign(next); return; }
-      else setMessage("Check your email and click the link to confirm your account.");
+      else setSentTo({ email, kind: "signup" });
     } else if (mode === "link") {
       const { error: otpError } = await supabase.auth.signInWithOtp({ email, options: { emailRedirectTo: callback(next) } });
-      if (otpError) setError(otpError.message); else setMessage("Check your email for the secure sign-in link.");
+      if (otpError) setError(otpError.message); else setSentTo({ email, kind: "link" });
     } else {
       const { error: resetError } = await supabase.auth.resetPasswordForEmail(email, { redirectTo: callback("/account?password=reset") });
-      if (resetError) setError(resetError.message); else setMessage("If that email has an account, a reset link is on its way. Open it, then choose a new password in My access.");
+      if (resetError) setError(resetError.message); else setSentTo({ email, kind: "reset" });
     }
     setBusy(false);
   }
@@ -64,7 +65,38 @@ export function LoginForm({ next = "/account" }: { next?: string }) {
     }
   }
 
-  const switchTo = (target: Mode) => () => { setMode(target); setMessage(""); setError(""); };
+  const switchTo = (target: Mode) => () => { setMode(target); setMessage(""); setError(""); setSentTo(null); };
+
+  async function resend() {
+    if (!sentTo) return;
+    setBusy(true);
+    setMessage("");
+    setError("");
+    const supabase = createClient();
+    const { error: resendError } = sentTo.kind === "signup"
+      ? await supabase.auth.resend({ type: "signup", email: sentTo.email, options: { emailRedirectTo: callback(next) } })
+      : sentTo.kind === "link"
+        ? await supabase.auth.signInWithOtp({ email: sentTo.email, options: { emailRedirectTo: callback(next) } })
+        : await supabase.auth.resetPasswordForEmail(sentTo.email, { redirectTo: callback("/account?password=reset") });
+    if (resendError) setError(resendError.message); else setMessage("Sent again. It can take a minute to arrive.");
+    setBusy(false);
+  }
+
+  if (sentTo) {
+    const action = sentTo.kind === "signup" ? "confirm your account" : sentTo.kind === "link" ? "sign in" : "reset your password";
+    return <div className="checkEmail" role="status" aria-live="polite">
+      <h2>Check your email</h2>
+      <p>We&apos;ve sent a link to <b>{sentTo.email}</b>.</p>
+      <p><b>Open that email and click the link to {action}.</b> You can close this page.</p>
+      <p>Not there after a few minutes? Check your spam or promotions folder.</p>
+      {message && <p className="formMessage">{message}</p>}
+      {error && <p className="formError" role="alert">{error}</p>}
+      <div className="authSwitch">
+        <button type="button" onClick={resend} disabled={busy}>{busy ? "Sending…" : "Send the email again"}</button>
+        <button type="button" onClick={switchTo(mode)}>Use a different email</button>
+      </div>
+    </div>;
+  }
   const needsPassword = mode === "password" || mode === "signup";
 
   return <form className="authForm" onSubmit={submit}>

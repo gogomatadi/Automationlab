@@ -281,3 +281,12 @@ test("checkout refuses a second booking for the same account before Paystack is 
   assert.ok(guard > 0 && guard < order.indexOf("/transaction/initialize"));
   assert.match(order, /\.eq\("email", user\.email\)\.neq\("status", "cancelled"\)/);
 });
+
+test("sign-up replaces the form with a prominent check-your-email panel", async () => {
+  const source = await readFile(new URL("../components/login-form.tsx", import.meta.url), "utf8");
+  const home = await readFile(new URL("../app/page.tsx", import.meta.url), "utf8");
+  assert.match(source, /setSentTo\(\{ email, kind: "signup" \}\)/);
+  assert.match(source, /<h2>Check your email<\/h2>/);
+  assert.match(source, /auth\.resend\(/);
+  assert.match(home, /className="navCta" href="\/account"/);
+});

@@ -3,7 +3,7 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   title: "AutomateLab | AI Automation Blueprints & Live Course",
-  description: "Get 100 production-ready Make.com blueprints for $9.99/month or join a practical $29 live AI automation course.",
+  description: "Get 100 production-ready Make.com blueprints for R179/month or join a practical live AI automation course.",
   icons: {
     icon: "/favicon.svg",
     shortcut: "/favicon.svg",

@@ -175,3 +175,22 @@ test("storefront and release manager advertise the current 100-blueprint library
     assert.doesNotMatch(source, /\b84\b/);
   }
 });
+
+test("legal pages exist and the footer links to them", async () => {
+  for (const file of ["app/privacy/page.tsx", "app/terms/page.tsx"]) {
+    const source = await readFile(new URL(`../${file}`, import.meta.url), "utf8");
+    assert.match(source, /LegalPage/);
+  }
+  const home = await readFile(new URL("../app/page.tsx", import.meta.url), "utf8");
+  assert.match(home, /href="\/privacy"/);
+  assert.match(home, /href="\/terms"/);
+  assert.doesNotMatch(home, /href="#">(Privacy|Terms)</);
+});
+
+test("keep-alive performs a real throttled database write", async () => {
+  const source = await readFile(new URL("../app/api/keepalive/route.ts", import.meta.url), "utf8");
+  const vercel = JSON.parse(await readFile(new URL("../vercel.json", import.meta.url), "utf8"));
+  assert.match(source, /\.upsert\(/);
+  assert.match(source, /MIN_INTERVAL_MS/);
+  assert.ok(vercel.crons.some((cron) => cron.path === "/api/keepalive"));
+});

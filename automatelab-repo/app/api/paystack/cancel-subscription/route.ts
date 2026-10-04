@@ -1,4 +1,5 @@
 import { apiError, isSameOrigin } from "@/lib/http";
+import { findSubscription, subscriptionToken, syncMembership } from "@/lib/membership";
 import { paystackRequest } from "@/lib/paystack";
 import { createAdminClientInstance, requireUser } from "@/lib/supabase/server";
 
@@ -9,36 +10,19 @@ export async function POST(request: Request) {
   if (!user?.email) return apiError("Sign in to manage your membership.", 401);
 
   const supabase = createAdminClientInstance();
-  const columns = "paystack_subscription_code,paystack_email_token,paystack_customer_code,current_period_end,email";
-  const active = () => supabase.from("subscriptions").select(columns).eq("provider", "paystack").eq("status", "active")
-    .order("created_at", { ascending: false }).limit(1);
-  const { data: byUser } = await active().eq("user_id", user.id).maybeSingle();
-  const subscription = byUser || (await active().eq("email", user.email).maybeSingle()).data;
+  const subscription = await findSubscription(supabase, { id: user.id, email: user.email }, "active");
   if (!subscription?.paystack_subscription_code) return apiError("You don't have an active membership to cancel.", 404);
 
-  let token = subscription.paystack_email_token;
-  if (!token) {
-    const lookup = await paystackRequest(`/subscription/${encodeURIComponent(subscription.paystack_subscription_code)}`);
-    const found = await lookup.json().catch(() => ({})) as { data?: { email_token?: string } };
-    token = found.data?.email_token || null;
-  }
+  const token = await subscriptionToken(subscription);
   if (!token) return apiError("We couldn't cancel automatically. Use Contact us and we'll cancel it for you.", 502);
 
   const response = await paystackRequest("/subscription/disable", {
     method: "POST",
     body: JSON.stringify({ code: subscription.paystack_subscription_code, token }),
   });
-  const result = await response.json().catch(() => ({})) as { status?: boolean; message?: string };
+  const result = await response.json().catch(() => ({})) as { status?: boolean };
   if (!response.ok || !result.status) return apiError("Paystack could not cancel the membership. Use Contact us and we'll cancel it for you.", 502);
 
-  await supabase.rpc("paystack_sync_library_subscription", {
-    p_subscription_code: subscription.paystack_subscription_code,
-    p_customer_code: subscription.paystack_customer_code,
-    p_email_token: token,
-    p_email: subscription.email,
-    p_status: "cancelled",
-    p_period_end: subscription.current_period_end,
-    p_provider_payload: { cancelled_by: "customer", cancelled_at: new Date().toISOString() },
-  });
+  await syncMembership(supabase, subscription, token, "cancelled", "cancel");
   return Response.json({ ok: true, accessUntil: subscription.current_period_end });
 }

@@ -290,3 +290,12 @@ test("sign-up replaces the form with a prominent check-your-email panel", async 
   assert.match(source, /auth\.resend\(/);
   assert.match(home, /className="navCta" href="\/account"/);
 });
+
+test("a cancelled membership can be resumed while the paid period runs", async () => {
+  const resume = await readFile(new URL("../app/api/paystack/resume-subscription/route.ts", import.meta.url), "utf8");
+  const account = await readFile(new URL("../app/account/page.tsx", import.meta.url), "utf8");
+  assert.match(resume, /\/subscription\/enable/);
+  assert.match(resume, /requireUser/);
+  assert.match(resume, /current_period_end\) <= new Date\(\)/);
+  assert.match(account, /status === "cancelled" && <ResumeMembershipButton/);
+});

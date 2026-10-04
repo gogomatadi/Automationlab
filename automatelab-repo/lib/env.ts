@@ -28,4 +28,5 @@ export const serverEnv = {
   paystackSecret: () => required("PAYSTACK_SECRET_KEY"),
   adminEmail: () => (process.env.ADMIN_EMAIL || storefrontDefaults.adminEmail).toLowerCase(),
   releaseBucket: () => process.env.RELEASE_BUCKET || "blueprint-releases",
+  makeContactWebhook: () => process.env.MAKE_CONTACT_WEBHOOK_URL || "",
 };

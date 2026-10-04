@@ -8,7 +8,7 @@ export async function SiteHeader() {
 
   return <nav className="nav shell" aria-label="Main navigation">
     <Link className="brand" href="/"><span className="brandMark">A</span><span>Automate<span className="lime">Lab</span></span></Link>
-    <div className="navLinks"><Link href="/course">Course</Link><Link href="/library">Blueprint library</Link><Link href="/account">My access</Link></div>
+    <div className="navLinks"><Link href="/course">Course</Link><Link href="/library">Blueprint library</Link><Link href="/account">My access</Link><Link href="/contact">Contact us</Link></div>
     <Link className="navCta" href={isAdmin ? "/admin" : user ? "/account" : "/login"}>
       {isAdmin ? "Admin" : user ? "My access" : "Sign in"} <span>↗</span>
     </Link>

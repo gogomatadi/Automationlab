@@ -20,6 +20,6 @@ export default function PrivacyPage() {
     <h2>Cookies</h2>
     <p>We use only the cookies needed to keep you signed in and to complete checkout. We do not use advertising cookies.</p>
     <h2>Contact</h2>
-    <p>Email <a href="mailto:gogomatadi@gmail.com">gogomatadi@gmail.com</a> with any privacy request.</p>
+    <p>Email <a href="mailto:business@massuba.com">business@massuba.com</a> with any privacy request.</p>
   </LegalPage>;
 }

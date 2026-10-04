@@ -20,6 +20,6 @@ export default function TermsPage() {
     <h2>Disclaimer</h2>
     <p>Blueprints are provided as starting points. You are responsible for testing them, for how you configure them, and for the third-party services and API costs they use. To the extent the law allows, our liability is limited to the amount you paid us in the 12 months before a claim.</p>
     <h2>Contact</h2>
-    <p>Email <a href="mailto:gogomatadi@gmail.com">gogomatadi@gmail.com</a> with questions, cancellations or refund requests.</p>
+    <p>Email <a href="mailto:business@massuba.com">business@massuba.com</a> with questions, cancellations or refund requests.</p>
   </LegalPage>;
 }

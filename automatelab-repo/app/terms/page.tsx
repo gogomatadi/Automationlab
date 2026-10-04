@@ -9,10 +9,20 @@ export default function TermsPage() {
     <p>These terms apply when you buy from or use AutomateLab. Nothing in them limits rights you have under the Consumer Protection Act, 2008 or the Electronic Communications and Transactions Act, 2002.</p>
     <h2>Prices and payment</h2>
     <p>All prices are in South African Rand (ZAR) and are shown before checkout. Payments are processed by Paystack. Access is granted only after the payment is verified.</p>
-    <h2>Blueprint membership</h2>
-    <p>The membership is billed monthly until you cancel. You can cancel at any time and keep access until the end of the period you have paid for. Files you have already downloaded remain yours to use in your own business or for your clients.</p>
-    <h2>Live courses</h2>
-    <p>Each session has limited seats, and your seat is confirmed once payment is verified. If we cancel or reschedule a session, you may choose a different date or receive a full refund. If you cannot attend, contact us at least 7 days before the session to move to another date or get a refund.</p>
+    <h2>Refunds</h2>
+    <h3>Live courses</h3>
+    <ul>
+      <li>Cancel 7 or more days before your session: full refund, or move to another date.</li>
+      <li>Cancel less than 7 days before, or miss the session: no refund, but you can move once to another date.</li>
+      <li>If we cancel or reschedule: you choose a full refund or a new date.</li>
+    </ul>
+    <h3>Blueprint membership</h3>
+    <ul>
+      <li>Cancel anytime. Your access continues until the end of the month you&apos;ve paid for.</li>
+      <li>We don&apos;t refund months already paid for, because the files are available to download straight away.</li>
+    </ul>
+    <h3>How to ask</h3>
+    <p>Email <a href="mailto:business@massuba.com">business@massuba.com</a> with your account email. Approved refunds go back to your original payment method within 5–10 business days.</p>
     <h2>Licence</h2>
     <p>Blueprints and course materials are licensed for your own use and your clients&apos; use. You may not resell, republish or redistribute them as a template pack or library.</p>
     <h2>Your account</h2>

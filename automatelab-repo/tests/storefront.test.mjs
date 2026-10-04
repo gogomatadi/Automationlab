@@ -215,5 +215,62 @@ test("contact page is linked from the header, footer and customer portal", async
   const account = await readFile(new URL("../app/account/page.tsx", import.meta.url), "utf8");
   assert.match(header, /href="\/contact"/);
   assert.match(home, /href="\/contact"/);
-  assert.match(account, /\/contact\?topic=cancel_membership/);
+  assert.match(account, /href="\/contact"/);
+  assert.match(account, /CancelMembershipButton/);
+});
+
+test("course bookings capture attendee details and a reference before payment", async () => {
+  const order = await readFile(new URL("../app/api/paystack/create-order/route.ts", import.meta.url), "utf8");
+  const migration = await readFile(new URL("../supabase/migrations/20261004120000_course_bookings.sql", import.meta.url), "utf8");
+  const booking = await readFile(new URL("../lib/booking.ts", import.meta.url), "utf8");
+  assert.match(order, /parseAttendee\(body\)/);
+  assert.match(order, /from\("course_bookings"\)\.insert/);
+  assert.ok(order.indexOf("parseAttendee(body)") < order.indexOf("/transaction/initialize"));
+  assert.match(migration, /enable row level security/i);
+  assert.match(migration, /user_id = \(select auth\.uid\(\)\)/);
+  assert.doesNotMatch(migration, /grant (insert|update|delete)[^;]*course_bookings[^;]*authenticated/i);
+  assert.match(booking, /crypto\.getRandomValues/);
+});
+
+test("booking lookup needs the matching email and never returns contact details", async () => {
+  const lookup = await readFile(new URL("../app/api/booking/lookup/route.ts", import.meta.url), "utf8");
+  assert.match(lookup, /booking\.email\.toLowerCase\(\) !== email\.toLowerCase\(\)/);
+  assert.match(lookup, /toBookingView\(booking, session, registration\?\.status \|\| null, false\)/);
+  assert.match(lookup, /isSameOrigin/);
+});
+
+test("booking confirmation is claimed once before posting to Make", async () => {
+  const notify = await readFile(new URL("../lib/notify.ts", import.meta.url), "utf8");
+  const webhook = await readFile(new URL("../app/api/paystack/webhook/route.ts", import.meta.url), "utf8");
+  const ret = await readFile(new URL("../app/paystack/course-return/route.ts", import.meta.url), "utf8");
+  assert.match(notify, /\.is\("confirmation_sent_at", null\)/);
+  assert.match(notify, /confirmation_sent_at: null/);
+  assert.match(webhook, /sendBookingConfirmation/);
+  assert.match(ret, /sendBookingConfirmation/);
+  assert.ok(webhook.indexOf("verifyPaystackSignature(raw") < webhook.indexOf("sendBookingConfirmation(supabase"));
+});
+
+test("cancelled memberships keep access until the paid period ends", async () => {
+  const migration = await readFile(new URL("../supabase/migrations/20261004120000_course_bookings.sql", import.meta.url), "utf8");
+  const cancel = await readFile(new URL("../app/api/paystack/cancel-subscription/route.ts", import.meta.url), "utf8");
+  assert.match(migration, /p_status = 'cancelled'\s+and coalesce\(p_period_end, public\.entitlements\.expires_at\) > now\(\)/);
+  assert.match(cancel, /\/subscription\/disable/);
+  assert.match(cancel, /requireUser/);
+  assert.doesNotMatch(cancel, /\.or\(/);
+});
+
+test("admin sessions are priced in rand and entered in South African time", async () => {
+  const actions = await readFile(new URL("../app/admin/actions.ts", import.meta.url), "utf8");
+  assert.match(actions, /currency: "ZAR"/);
+  assert.doesNotMatch(actions, /price_cents: 2900|currency: "USD"/);
+  assert.match(actions, /sastInputToIso/);
+  assert.match(actions, /export async function updateCourseSession/);
+});
+
+test("login supports email and password alongside Google and email links", async () => {
+  const source = await readFile(new URL("../components/login-form.tsx", import.meta.url), "utf8");
+  assert.match(source, /signInWithPassword/);
+  assert.match(source, /auth\.signUp/);
+  assert.match(source, /resetPasswordForEmail/);
+  assert.match(source, /signInWithOtp/);
 });

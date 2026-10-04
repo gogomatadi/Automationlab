@@ -1,3 +1,4 @@
+import { sendBookingConfirmation } from "@/lib/notify";
 import { verifyPaystackSignature } from "@/lib/paystack";
 import { PaystackEvent, subscriptionStateForPaystackEvent } from "@/lib/paystack-events";
 import { createAdminClientInstance } from "@/lib/supabase/server";
@@ -29,7 +30,7 @@ export async function POST(request: Request) {
       const reference = d.reference;
       if (!reference) throw new Error("Charge event is missing a reference.");
       const { data: payment } = await supabase.from("payments")
-        .select("amount_cents,currency,product_type,status")
+        .select("id,amount_cents,currency,product_type,status")
         .eq("paystack_reference", reference).maybeSingle();
       if (!payment) throw new Error("Charge event has no matching payment.");
       if (payment.product_type === "course" && payment.status !== "paid") {
@@ -42,6 +43,7 @@ export async function POST(request: Request) {
         });
         if (error) throw error;
       }
+      if (payment.product_type === "course") await sendBookingConfirmation(supabase, payment.id);
     } else {
       // Subscription lifecycle: create / renewal invoice / disable / not_renew.
       const state = subscriptionStateForPaystackEvent(event.event, d.status);

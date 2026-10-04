@@ -29,4 +29,5 @@ export const serverEnv = {
   adminEmail: () => (process.env.ADMIN_EMAIL || storefrontDefaults.adminEmail).toLowerCase(),
   releaseBucket: () => process.env.RELEASE_BUCKET || "blueprint-releases",
   makeContactWebhook: () => process.env.MAKE_CONTACT_WEBHOOK_URL || "",
+  makeBookingWebhook: () => process.env.MAKE_BOOKING_WEBHOOK_URL || "",
 };

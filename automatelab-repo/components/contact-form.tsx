@@ -3,7 +3,7 @@
 import { FormEvent, useState } from "react";
 import { accountTopics, contactTopics, type ContactTopic } from "@/lib/contact";
 
-export function ContactForm({ signedInEmail, initialTopic }: { signedInEmail: string | null; initialTopic: ContactTopic }) {
+export function ContactForm({ signedInEmail, initialTopic, initialMessage = "" }: { signedInEmail: string | null; initialTopic: ContactTopic; initialMessage?: string }) {
   const [topic, setTopic] = useState<ContactTopic>(initialTopic);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
@@ -41,7 +41,7 @@ export function ContactForm({ signedInEmail, initialTopic }: { signedInEmail: st
     {needsSignIn ? <p>To protect your account, cancellations and refunds can only be requested while signed in. <a className="button primary" href={`/login?next=${encodeURIComponent(`/contact?topic=${topic}`)}`}>Sign in to continue →</a></p> : <>
       <label>Your name<input name="name" maxLength={100} autoComplete="name" /></label>
       {signedInEmail ? <p>Replies go to <b>{signedInEmail}</b>.</p> : <label>Your email<input name="email" type="email" required autoComplete="email" /></label>}
-      <label>Message<textarea name="message" required minLength={2} maxLength={2000} rows={6} placeholder={topic === "cancel_course" ? "Which session would you like to cancel?" : ""} /></label>
+      <label>Message<textarea name="message" defaultValue={initialMessage} required minLength={2} maxLength={2000} rows={6} placeholder={topic === "cancel_course" ? "Your booking reference (AL-…) and whether you'd like a refund or a new date" : ""} /></label>
       <input name="website" tabIndex={-1} autoComplete="off" className="honeypot" aria-hidden="true" />
       <button className="button primary" disabled={busy}>{busy ? "Sending…" : "Send message →"}</button>
     </>}

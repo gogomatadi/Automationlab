@@ -1,3 +1,4 @@
+import { newBookingReference, parseAttendee } from "@/lib/booking";
 import { apiError, isSameOrigin } from "@/lib/http";
 import { publicEnv } from "@/lib/env";
 import { paystackRequest } from "@/lib/paystack";
@@ -10,8 +11,10 @@ export async function POST(request: Request) {
   }
   const user = await requireUser();
   if (!user?.email) return apiError("Sign in before checkout.", 401);
-  const body = await request.json().catch(() => ({})) as { courseSessionId?: string };
+  const body = await request.json().catch(() => ({})) as Record<string, unknown> & { courseSessionId?: string };
   if (!body.courseSessionId || !/^[0-9a-f-]{36}$/i.test(body.courseSessionId)) return apiError("Choose a valid course session.");
+  const attendee = parseAttendee(body);
+  if (typeof attendee === "string") return apiError(attendee);
 
   const supabase = createAdminClientInstance();
   const { data: session } = await supabase.from("course_sessions")
@@ -44,7 +47,7 @@ export async function POST(request: Request) {
     return apiError(result.message || "Paystack could not start the checkout.", 502);
   }
 
-  const { error } = await supabase.rpc("paystack_reserve_course_order", {
+  const { data: paymentId, error } = await supabase.rpc("paystack_reserve_course_order", {
     p_user_id: user.id,
     p_email: user.email,
     p_course_session_id: session.id,
@@ -53,6 +56,24 @@ export async function POST(request: Request) {
     p_currency: session.currency,
     p_provider_payload: result.data,
   });
-  if (error) return apiError("The checkout was created but could not be recorded. Please contact support.", 500);
+  if (error || !paymentId) return apiError("The checkout was created but could not be recorded. Please contact support.", 500);
+
+  // Retry on the (very unlikely) chance of a reference collision.
+  let bookingError: { code?: string } | null = null;
+  for (let attempt = 0; attempt < 3; attempt++) {
+    ({ error: bookingError } = await supabase.from("course_bookings").insert({
+      payment_id: paymentId,
+      reference: newBookingReference(),
+      user_id: user.id,
+      course_session_id: session.id,
+      full_name: attendee.fullName,
+      email: attendee.email,
+      phone: attendee.phone,
+      company: attendee.company,
+      goal: attendee.goal,
+    }));
+    if (bookingError?.code !== "23505") break;
+  }
+  if (bookingError) return apiError("Your booking details could not be saved. No payment has been taken; please try again.", 500);
   return Response.json({ authorizationUrl: result.data.authorization_url });
 }

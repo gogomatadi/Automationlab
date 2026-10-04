@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { sendBookingConfirmation } from "@/lib/notify";
 import { paystackRequest } from "@/lib/paystack";
 import { createAdminClientInstance, requireUser } from "@/lib/supabase/server";
 
@@ -14,7 +15,7 @@ export async function GET(request: Request) {
   const { data: payment } = await supabase.from("payments").select("id,user_id,status,amount_cents,currency")
     .eq("paystack_reference", reference).eq("user_id", user.id).maybeSingle();
   if (!payment) return NextResponse.redirect(new URL("/course?checkout=unknown", url.origin));
-  if (payment.status === "paid") return NextResponse.redirect(new URL("/account?purchase=course", url.origin));
+  if (payment.status === "paid") return confirmed(supabase, payment.id, url.origin);
 
   const response = await paystackRequest(`/transaction/verify/${encodeURIComponent(reference)}`);
   const result = await response.json().catch(() => ({})) as { status?: boolean; data?: { status?: string; amount?: number; currency?: string } };
@@ -26,5 +27,12 @@ export async function GET(request: Request) {
     p_reference: reference, p_provider_payload: result.data,
   });
   if (error) return NextResponse.redirect(new URL("/course?checkout=recording-failed", url.origin));
-  return NextResponse.redirect(new URL("/account?purchase=course", url.origin));
+  return confirmed(supabase, payment.id, url.origin);
+}
+
+async function confirmed(supabase: ReturnType<typeof createAdminClientInstance>, paymentId: string, origin: string) {
+  await sendBookingConfirmation(supabase, paymentId);
+  const { data: booking } = await supabase.from("course_bookings").select("reference").eq("payment_id", paymentId).maybeSingle();
+  if (!booking) return NextResponse.redirect(new URL("/account?purchase=course", origin));
+  return NextResponse.redirect(new URL(`/booking?ref=${booking.reference}&new=1`, origin));
 }

@@ -20,7 +20,11 @@ export async function POST(request: Request) {
   const { data: entitlement } = await supabase.from("entitlements").select("status,expires_at")
     .eq("email", user.email).eq("kind", "library").maybeSingle();
   if (entitlement?.status === "active" && (!entitlement.expires_at || new Date(entitlement.expires_at) > new Date())) {
-    return apiError("Your membership is already active. Open My access.", 409);
+    const { data: latest } = await supabase.from("subscriptions").select("status").eq("email", user.email)
+      .eq("provider", "paystack").order("created_at", { ascending: false }).limit(1).maybeSingle();
+    return apiError(latest?.status === "cancelled"
+      ? "Your membership is cancelled but still active. Resume it from My access to keep it going."
+      : "Your membership is already active. Open My access.", 409);
   }
 
   const reference = `al_m_${crypto.randomUUID().replace(/-/g, "")}`;

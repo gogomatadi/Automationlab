@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
-import { CancelMembershipButton, PasswordForm } from "@/components/account-actions";
+import { CancelMembershipButton, PasswordForm, ResumeMembershipButton } from "@/components/account-actions";
 import { BookingCard } from "@/components/booking-card";
 import { SiteHeader } from "@/components/site-header";
 import { formatDay } from "@/lib/booking";
@@ -53,6 +53,7 @@ export default async function AccountPage({ searchParams }: { searchParams: Prom
         </dl>}
         {libraryActive && release ? <a className="button primary" href="/api/download">Download current ZIP →</a> : !libraryActive && <a className="button darkButton" href="/library">View membership →</a>}
         {libraryActive && subscription?.status === "active" && <CancelMembershipButton renewsOn={periodEnd} />}
+        {libraryActive && subscription?.status === "cancelled" && <ResumeMembershipButton accessUntil={periodEnd} />}
       </article>
 
       <article className="dashboardCard"><span>COURSE BOOKINGS</span>

@@ -194,3 +194,26 @@ test("keep-alive performs a real throttled database write", async () => {
   assert.match(source, /MIN_INTERVAL_MS/);
   assert.ok(vercel.crons.some((cron) => cron.path === "/api/keepalive"));
 });
+
+test("contact form requires sign-in for cancellations and keeps the webhook server-side", async () => {
+  const route = await readFile(new URL("../app/api/contact/route.ts", import.meta.url), "utf8");
+  const form = await readFile(new URL("../components/contact-form.tsx", import.meta.url), "utf8");
+  const lib = await readFile(new URL("../lib/contact.ts", import.meta.url), "utf8");
+  assert.match(lib, /accountTopics: ContactTopic\[\] = \["cancel_course", "cancel_membership", "refund"\]/);
+  assert.match(route, /needsAccount && !user\?\.email/);
+  assert.match(route, /status: 401|, 401\)/);
+  assert.match(route, /const email = user\?\.email \|\|/);
+  assert.match(route, /isSameOrigin/);
+  assert.match(route, /escapeHtml\(message\)/);
+  assert.doesNotMatch(form, /hook\.[a-z0-9]+\.make\.com|MAKE_CONTACT_WEBHOOK_URL/);
+  assert.doesNotMatch(route, /hook\.[a-z0-9]+\.make\.com/);
+});
+
+test("contact page is linked from the header, footer and customer portal", async () => {
+  const header = await readFile(new URL("../components/site-header.tsx", import.meta.url), "utf8");
+  const home = await readFile(new URL("../app/page.tsx", import.meta.url), "utf8");
+  const account = await readFile(new URL("../app/account/page.tsx", import.meta.url), "utf8");
+  assert.match(header, /href="\/contact"/);
+  assert.match(home, /href="\/contact"/);
+  assert.match(account, /\/contact\?topic=cancel_membership/);
+});

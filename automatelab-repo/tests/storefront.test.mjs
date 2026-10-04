@@ -274,3 +274,10 @@ test("login supports email and password alongside Google and email links", async
   assert.match(source, /resetPasswordForEmail/);
   assert.match(source, /signInWithOtp/);
 });
+
+test("checkout refuses a second booking for the same account before Paystack is called", async () => {
+  const order = await readFile(new URL("../app/api/paystack/create-order/route.ts", import.meta.url), "utf8");
+  const guard = order.indexOf("You're already booked on this session");
+  assert.ok(guard > 0 && guard < order.indexOf("/transaction/initialize"));
+  assert.match(order, /\.eq\("email", user\.email\)\.neq\("status", "cancelled"\)/);
+});

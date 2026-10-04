@@ -22,6 +22,12 @@ export async function POST(request: Request) {
     .eq("id", body.courseSessionId).eq("status", "published").maybeSingle();
   if (!session || (session.registration_deadline && new Date(session.registration_deadline) <= new Date())) return apiError("That course session is not available.", 404);
 
+  // One seat per account per session (registrations are unique on session + email). Stop here,
+  // before Paystack takes a payment that could never be recorded as a booking.
+  const { data: existing } = await supabase.from("registrations").select("id")
+    .eq("course_session_id", session.id).eq("email", user.email).neq("status", "cancelled").limit(1).maybeSingle();
+  if (existing) return apiError("You're already booked on this session. See My access for your booking.", 409);
+
   const { count } = await supabase.from("registrations").select("id", { count: "exact", head: true })
     .eq("course_session_id", session.id).eq("status", "confirmed");
   if ((count || 0) >= session.capacity) return apiError("That course session is full.", 409);

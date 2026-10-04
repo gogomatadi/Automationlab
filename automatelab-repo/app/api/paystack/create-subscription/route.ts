@@ -1,6 +1,6 @@
 import { publicEnv } from "@/lib/env";
 import { apiError, isSameOrigin } from "@/lib/http";
-import { paystackRequest } from "@/lib/paystack";
+import { membershipPlanSettingKey, paystackRequest } from "@/lib/paystack";
 import { createAdminClientInstance, requireUser } from "@/lib/supabase/server";
 
 export async function POST(request: Request) {
@@ -13,7 +13,7 @@ export async function POST(request: Request) {
   const supabase = createAdminClientInstance();
 
   const { data: planSetting } = await supabase.from("storefront_settings").select("value")
-    .eq("key", "paystack_membership_plan_code").maybeSingle();
+    .eq("key", membershipPlanSettingKey()).maybeSingle();
   if (!planSetting?.value) return apiError("Membership is being configured. No subscription has been started.", 503);
 
   // Already an active member? Don't start a second subscription.

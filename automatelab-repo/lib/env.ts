@@ -25,7 +25,8 @@ export const serverEnv = {
   paypalSecret: () => required("PAYPAL_CLIENT_SECRET"),
   paypalWebhookId: () => required("PAYPAL_WEBHOOK_ID"),
   paypalEnvironment: () => process.env.PAYPAL_ENVIRONMENT === "live" ? "live" : "sandbox",
-  paystackSecret: () => required("PAYSTACK_SECRET_KEY"),
+  // Trim: a key pasted with a trailing newline makes the Authorization header invalid.
+  paystackSecret: () => required("PAYSTACK_SECRET_KEY").trim(),
   adminEmail: () => (process.env.ADMIN_EMAIL || storefrontDefaults.adminEmail).toLowerCase(),
   releaseBucket: () => process.env.RELEASE_BUCKET || "blueprint-releases",
   makeContactWebhook: () => process.env.MAKE_CONTACT_WEBHOOK_URL || "",

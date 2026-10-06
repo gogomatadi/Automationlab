@@ -3,15 +3,21 @@ import { serverEnv } from "@/lib/env";
 
 // Paystack REST helper. Mirrors lib/paypal.ts: server-only, Bearer secret key.
 export async function paystackRequest(path: string, init: RequestInit = {}) {
-  return fetch(`https://api.paystack.co${path}`, {
-    ...init,
-    headers: {
-      Authorization: `Bearer ${serverEnv.paystackSecret()}`,
-      "Content-Type": "application/json",
-      ...(init.headers || {}),
-    },
-    cache: "no-store",
-  });
+  try {
+    return await fetch(`https://api.paystack.co${path}`, {
+      ...init,
+      headers: {
+        Authorization: `Bearer ${serverEnv.paystackSecret()}`,
+        "Content-Type": "application/json",
+        ...(init.headers || {}),
+      },
+      cache: "no-store",
+    });
+  } catch (reason) {
+    // Never let a network or configuration failure crash the route with an empty 500.
+    console.error("Paystack request failed", path, reason instanceof Error ? `${reason.name}: ${reason.message}` : reason);
+    return Response.json({ status: false, message: "Payments are temporarily unavailable. No payment has been taken; please try again shortly." }, { status: 502 });
+  }
 }
 
 // Paystack signs each webhook body with HMAC-SHA512 using the secret key.

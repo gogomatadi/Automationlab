@@ -306,3 +306,11 @@ test("membership checkout uses the live plan code only with a live secret key", 
   assert.match(lib, /startsWith\("sk_live_"\) \? "paystack_membership_plan_code_live" : "paystack_membership_plan_code"/);
   assert.match(route, /membershipPlanSettingKey\(\)/);
 });
+
+test("Paystack calls tolerate a pasted key with whitespace and never crash the route", async () => {
+  const env = await readFile(new URL("../lib/env.ts", import.meta.url), "utf8");
+  const lib = await readFile(new URL("../lib/paystack.ts", import.meta.url), "utf8");
+  assert.match(env, /required\("PAYSTACK_SECRET_KEY"\)\.trim\(\)/);
+  assert.match(lib, /catch \(reason\)/);
+  assert.match(lib, /status: 502/);
+});

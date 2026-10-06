@@ -15,8 +15,10 @@ export async function paystackRequest(path: string, init: RequestInit = {}) {
     });
   } catch (reason) {
     // Never let a network or configuration failure crash the route with an empty 500.
-    console.error("Paystack request failed", path, reason instanceof Error ? `${reason.name}: ${reason.message}` : reason);
-    return Response.json({ status: false, message: "Payments are temporarily unavailable. No payment has been taken; please try again shortly." }, { status: 502 });
+    const detail = reason instanceof Error ? `${reason.name}: ${reason.message}`.slice(0, 200) : "unknown";
+    console.error("Paystack request failed", path, detail);
+    // detail is the error type only (e.g. invalid header character); it never contains the key.
+    return Response.json({ status: false, message: "Payments are temporarily unavailable. No payment has been taken; please try again shortly.", detail }, { status: 502 });
   }
 }
 

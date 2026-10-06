@@ -4,24 +4,30 @@ import { FormEvent, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 
 export function CancelMembershipButton({ renewsOn }: { renewsOn: string | null }) {
+  const [confirming, setConfirming] = useState(false);
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
 
   async function cancel() {
-    if (!window.confirm(`Cancel your membership? You won't be billed again${renewsOn ? `, and you keep access until ${renewsOn}` : ""}.`)) return;
     setBusy(true);
     setError("");
     const response = await fetch("/api/paystack/cancel-subscription", { method: "POST" }).catch(() => null);
     const data = await response?.json().catch(() => ({})) as { error?: string } | undefined;
-    if (response?.ok) setMessage(`Membership cancelled. You won't be billed again${renewsOn ? `; access continues until ${renewsOn}` : ""}.`);
+    if (response?.ok) { setMessage(`Membership cancelled. You won't be billed again${renewsOn ? `; access continues until ${renewsOn}` : ""}.`); window.setTimeout(() => window.location.reload(), 2500); }
     else setError(data?.error || "The membership could not be cancelled. Use Contact us and we'll cancel it for you.");
     setBusy(false);
   }
 
   if (message) return <p className="formMessage" role="status">{message}</p>;
-  return <div>
-    <button className="textButtonLink" onClick={cancel} disabled={busy}>{busy ? "Cancelling…" : "Cancel membership"}</button>
+  // Inline confirmation: browser confirm() dialogs are blocked in some embedded browsers.
+  if (!confirming) return <button className="textButtonLink" onClick={() => setConfirming(true)}>Cancel membership</button>;
+  return <div className="confirmBox" role="alert">
+    <p>Cancel your membership? You won&apos;t be billed again{renewsOn ? `, and you keep access until ${renewsOn}` : ""}.</p>
+    <div className="portalActions">
+      <button className="button darkButton" onClick={cancel} disabled={busy}>{busy ? "Cancelling…" : "Yes, cancel"}</button>
+      <button className="textButtonLink" onClick={() => setConfirming(false)} disabled={busy}>Keep my membership</button>
+    </div>
     {error && <p className="formError" role="alert">{error}</p>}
   </div>;
 }

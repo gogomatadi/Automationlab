@@ -314,3 +314,9 @@ test("Paystack calls tolerate a pasted key with whitespace and never crash the r
   assert.match(lib, /catch \(reason\)/);
   assert.match(lib, /status: 502/);
 });
+
+test("membership cancellation confirms inline instead of window.confirm", async () => {
+  const source = await readFile(new URL("../components/account-actions.tsx", import.meta.url), "utf8");
+  assert.doesNotMatch(source, /window\.confirm/);
+  assert.match(source, /Yes, cancel/);
+});

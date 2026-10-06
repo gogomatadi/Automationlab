@@ -38,9 +38,9 @@ export async function POST(request: Request) {
       metadata: { user_id: user.id, product_type: "library_subscription" },
     }),
   });
-  const result = await response.json().catch(() => ({})) as { status?: boolean; message?: string; data?: { authorization_url?: string } };
+  const result = await response.json().catch(() => ({})) as { status?: boolean; message?: string; detail?: string; data?: { authorization_url?: string } };
   if (!response.ok || !result.status || !result.data?.authorization_url) {
-    return apiError(result.message || "Paystack could not start the subscription.", 502);
+    return Response.json({ error: result.message || "Paystack could not start the subscription.", detail: result.detail }, { status: 502 });
   }
   return Response.json({ authorizationUrl: result.data.authorization_url });
 }

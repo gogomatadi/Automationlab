@@ -48,9 +48,9 @@ export async function POST(request: Request) {
       },
     }),
   });
-  const result = await response.json().catch(() => ({})) as { status?: boolean; message?: string; data?: { authorization_url?: string; reference?: string } };
+  const result = await response.json().catch(() => ({})) as { status?: boolean; message?: string; detail?: string; data?: { authorization_url?: string; reference?: string } };
   if (!response.ok || !result.status || !result.data?.authorization_url) {
-    return apiError(result.message || "Paystack could not start the checkout.", 502);
+    return Response.json({ error: result.message || "Paystack could not start the checkout.", detail: result.detail }, { status: 502 });
   }
 
   const { data: paymentId, error } = await supabase.rpc("paystack_reserve_course_order", {

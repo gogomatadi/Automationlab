@@ -1,0 +1,39 @@
+name: AutomateLab verification
+
+on:
+  push:
+    branches:
+      - feature/automatelab-membership-onboarding
+  pull_request:
+    branches:
+      - main
+    paths:
+      - "automatelab-repo/**"
+      - ".github/workflows/automatelab-verify.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: automatelab-repo
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: automatelab-repo/package-lock.json
+      - name: Install locked dependencies
+        run: npm ci
+      - name: Lint
+        run: npm run lint
+      - name: Typecheck
+        run: npm run typecheck
+      - name: Test
+        run: npm test

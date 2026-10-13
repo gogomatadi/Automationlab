@@ -2,12 +2,21 @@ import assert from "node:assert/strict";
 import { readFile, readdir } from "node:fs/promises";
 import test from "node:test";
 import { centsFromPayPal, subscriptionStateForEvent } from "../lib/paypal-events.ts";
+import { isInitialMembershipActivation } from "../lib/membership-events.ts";
 
 test("maps PayPal subscription lifecycle events to access states", () => {
   assert.equal(subscriptionStateForEvent("BILLING.SUBSCRIPTION.ACTIVATED"), "active");
   assert.equal(subscriptionStateForEvent("BILLING.SUBSCRIPTION.PAYMENT.FAILED"), "past_due");
   assert.equal(subscriptionStateForEvent("BILLING.SUBSCRIPTION.CANCELLED"), "cancelled");
   assert.equal(subscriptionStateForEvent("UNKNOWN"), null);
+});
+
+test("sends onboarding only for initial active subscription events", () => {
+  assert.equal(isInitialMembershipActivation("paypal", "BILLING.SUBSCRIPTION.ACTIVATED"), true);
+  assert.equal(isInitialMembershipActivation("paypal", "BILLING.SUBSCRIPTION.UPDATED"), false);
+  assert.equal(isInitialMembershipActivation("paystack", "subscription.create"), true);
+  assert.equal(isInitialMembershipActivation("paystack", "subscription.enable"), false);
+  assert.equal(isInitialMembershipActivation("paystack", "charge.success"), false);
 });
 
 test("converts PayPal decimal amounts without accepting malformed values", () => {

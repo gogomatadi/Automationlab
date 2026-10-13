@@ -31,4 +31,5 @@ export const serverEnv = {
   releaseBucket: () => process.env.RELEASE_BUCKET || "blueprint-releases",
   makeContactWebhook: () => process.env.MAKE_CONTACT_WEBHOOK_URL || "",
   makeBookingWebhook: () => process.env.MAKE_BOOKING_WEBHOOK_URL || "",
+  makeMembershipWebhook: () => process.env.MAKE_MEMBERSHIP_WEBHOOK_URL || "",
 };

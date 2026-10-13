@@ -46,3 +46,22 @@ export async function sendBookingConfirmation(supabase: SupabaseClient, paymentI
   // Release the claim so the next caller (webhook retry or page reload) can try again.
   if (!response?.ok) await supabase.from("course_bookings").update({ confirmation_sent_at: null }).eq("payment_id", paymentId);
 }
+
+export async function sendMembershipActivation(email: string, provider: "paypal" | "paystack", subscriptionId: string) {
+  const webhook = serverEnv.makeMembershipWebhook();
+  if (!webhook) throw new Error("Membership onboarding webhook is not configured.");
+  if (!email.trim() || !subscriptionId.trim()) throw new Error("Membership onboarding data is incomplete.");
+
+  const response = await fetch(webhook, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      type: "membership_activated",
+      email: email.trim(),
+      provider,
+      subscriptionId,
+      accountUrl: `${publicEnv.siteUrl()}/account`,
+    }),
+  });
+  if (!response.ok) throw new Error("Membership onboarding webhook request failed.");
+}

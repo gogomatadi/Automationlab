@@ -1,4 +1,5 @@
-import { sendBookingConfirmation } from "@/lib/notify";
+import { sendBookingConfirmation, sendMembershipActivation } from "@/lib/notify";
+import { isInitialMembershipActivation } from "@/lib/membership-events";
 import { verifyPaystackSignature } from "@/lib/paystack";
 import { PaystackEvent, subscriptionStateForPaystackEvent } from "@/lib/paystack-events";
 import { createAdminClientInstance } from "@/lib/supabase/server";
@@ -19,8 +20,15 @@ export async function POST(request: Request) {
   const { error: insertError } = await supabase.from("paystack_webhook_events").insert({
     event_id: eventId, event_type: event.event, payload: event,
   });
-  if (insertError?.code === "23505") return Response.json({ received: true, duplicate: true });
-  if (insertError) return Response.json({ error: "Event could not be recorded." }, { status: 500 });
+  if (insertError?.code === "23505") {
+    const { data: retryClaim, error: retryError } = await supabase.from("paystack_webhook_events")
+      .update({ status: "received", error_message: null, processed_at: null })
+      .eq("event_id", eventId).eq("status", "failed").select("event_id").maybeSingle();
+    if (retryError) return Response.json({ error: "Event retry could not be recorded." }, { status: 500 });
+    if (!retryClaim) return Response.json({ received: true, duplicate: true });
+  } else if (insertError) {
+    return Response.json({ error: "Event could not be recorded." }, { status: 500 });
+  }
 
   try {
     const isSubscriptionCharge = event.event === "charge.success" && !!d.plan;
@@ -49,6 +57,9 @@ export async function POST(request: Request) {
       const state = subscriptionStateForPaystackEvent(event.event, d.status);
       const subscriptionCode = d.subscription_code || d.subscription?.subscription_code;
       const email = d.customer?.email;
+      if (isInitialMembershipActivation("paystack", event.event) && (!subscriptionCode || !email)) {
+        throw new Error("Paystack subscription event is missing its code or customer email.");
+      }
       if (state && subscriptionCode && email) {
         const { error } = await supabase.rpc("paystack_sync_library_subscription", {
           p_subscription_code: subscriptionCode,
@@ -60,6 +71,9 @@ export async function POST(request: Request) {
           p_provider_payload: d,
         });
         if (error) throw error;
+        if (isInitialMembershipActivation("paystack", event.event)) {
+          await sendMembershipActivation(email, "paystack", subscriptionCode);
+        }
       }
     }
     await supabase.from("paystack_webhook_events").update({ status: "processed", processed_at: new Date().toISOString() }).eq("event_id", eventId);

@@ -32,4 +32,6 @@ export const serverEnv = {
   makeContactWebhook: () => process.env.MAKE_CONTACT_WEBHOOK_URL || "",
   makeBookingWebhook: () => process.env.MAKE_BOOKING_WEBHOOK_URL || "",
   makeMembershipWebhook: () => process.env.MAKE_MEMBERSHIP_WEBHOOK_URL || "",
+  makeUnsubscribeWebhook: () => process.env.MAKE_UNSUBSCRIBE_WEBHOOK_URL || "",
+  unsubscribeSecret: () => process.env.UNSUBSCRIBE_SHARED_SECRET || "",
 };
